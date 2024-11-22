@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const {connectDB} = require('./config/db');
 const Routers =require('./routers/index');
 const { createAllTables } = require('./models/index');
+const bodyParser = require('body-parser');
 const app = express();
 dotenv.config();
 
@@ -11,6 +12,8 @@ connectDB().then(()=>{
 }).catch((error)=>{
     console.log('SQL database connection error : ', error);
 })
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({extended : false}))
 
 app.use('/', Routers)
 

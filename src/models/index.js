@@ -7,7 +7,7 @@ const executeQuery = async (query) => {
         const result = await pool.request().query(query);
         // console.log('Table creation result:', result);
     } catch (error) {
-        console.error('Error creating table:', error.message);
+        // console.error('Error creating table:', error.message);
     }
 };
 
