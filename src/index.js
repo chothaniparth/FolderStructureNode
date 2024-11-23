@@ -4,6 +4,7 @@ const {connectDB} = require('./config/db');
 const Routers =require('./routers/index');
 const { createAllTables } = require('./models/index');
 const bodyParser = require('body-parser');
+const cors = require('cors')
 const app = express();
 dotenv.config();
 
@@ -14,6 +15,7 @@ connectDB().then(()=>{
 })
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended : false}))
+app.use(cors());
 
 app.use('/', Routers)
 

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const { pool } = require('./db');
 dotenv.config()
 
 const checRequiredKeyValues = (allKeys, matchKeys) => {

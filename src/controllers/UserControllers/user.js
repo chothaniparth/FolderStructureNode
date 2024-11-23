@@ -1,6 +1,6 @@
-const { pool } = require('mssql');
+const { pool } = require('../../config/db');
 const bcrypt = require('bcrypt');
-const {checRequiredKeyValues, errorMessage, successMessage, generateJWTT} = require('../../config/common');
+const {checRequiredKeyValues, errorMessage, successMessage, generateJWTT, getCommonAPIResponse} = require('../../config/common');
 
 const getUserById = async (req, res) => {
     try{
@@ -23,17 +23,51 @@ const getUserById = async (req, res) => {
     }
 }
 
+const UserLogin = async (req, res) => {
+    try{
+        const {Email, Password} = req.body;
+
+        const missingKeys =  checRequiredKeyValues(['Email', 'Password'], req.body);
+
+        if(missingKeys.length > 0){
+            return res.status(400).json(errorMessage(`${missingKeys.join(', ')} is required`))
+        }
+        const fetchUserInfoQuery = `
+        SELECT * FROM Users WHERE Email = '${Email}'
+        `
+        const result = await pool.request().query(fetchUserInfoQuery);
+
+        const verifyUser = bcrypt.compareSync(Password, result?.recordset?.[0]?.Password)
+
+        if(result.recordset.length >= 0 && verifyUser === true){
+            return res.status(200).json({
+                ...successMessage('User Email and Password is velid'), 
+                    isLoginedIn : true, 
+                    token : generateJWTT({UserId : result?.recordset?.[0]?.UserId, 
+                    Email,
+                    UserId : result?.recordset?.[0]?.UserId,
+                }),
+            });
+        }
+        
+        return res.status(400).json({...errorMessage('Invelod Email or Password.'), isLoginedIn : false});
+    }catch(error){
+        console.log('login User Error : ', error);
+        return res.status(500).json(errorMessage(error.message))
+    }
+}
+
 const createUser = async (req, res)=>{
     try{
         const { Fname, Lname, DOB, Email, Password} = req.body;
         const missingKeys = checRequiredKeyValues(['Fname', 'Lname', 'DOB', 'Email', 'Password'], req.body);
         if(missingKeys.length > 0){
-            return res.status(400).send(`${missingKeys.join(', ')} is required.`);
+            return res.status(400).send(errorMessage(`${missingKeys.join(', ')} is required.`));
         }
         const salt = bcrypt.genSaltSync(5);
         const hash = bcrypt.hashSync(Password, salt);
 
-        const result = await pool.request().query(`
+        const result = await pool.query(`
             INSERT INTO Users (
                 Fname, Lname, DOB, Email, Password
             )
@@ -62,13 +96,13 @@ const updateuser = async (req, res) =>{
         }
         const updateQuery = `
         UPDATE Users SET
-        Fname = @Fname, 
-        Lname = @Lname, 
-        DOB = @DOB, 
-        Email = @Email
-        WHERE UserId = @UserId
+        Fname = '${Fname}', 
+        Lname = '${Lname}', 
+        DOB = '${DOB}', 
+        Email = '${Email}'
+        WHERE UserId = ${UserId}
         `
-        const result = await pool.query(updateQuery, {Fname, Lname, DOB, Email, UserId});
+        const result = await pool.request().query(updateQuery);
 
         if (result.rowsAffected[0] === 0) {
             return res.status(400).json(errorMessage('No User Updated.'));
@@ -86,13 +120,13 @@ const deleteUser = async (req, res) =>{
         const {UserId} = req.query;
         const missingKeys = checRequiredKeyValues(['UserId'], req.query)
         if (missingKeys.length > 0) {
-            return res.status(400).send(`${missingKeys.join()} is required`);
+            return res.status(400).send(errorMessage(`${missingKeys.join()} is required`));
         }
-        const DeleteQuery = `DELETE FROM Users  WHERE UserId = @UserId`
+        const DeleteQuery = `DELETE FROM Users  WHERE UserId = ${UserId}`
 
-        const result = await pool.query(DeleteQuery, {UserId});
+        const result = await pool.query(DeleteQuery);
 
-        if(result.recordset[0] === 0){
+        if(result.rowsAffected[0] === 0){
             return res.status(400).json(errorMessage(`No User Deleted.`));
         }
         
@@ -105,6 +139,7 @@ const deleteUser = async (req, res) =>{
 
 module.exports = {
     getUserById,
+    UserLogin,
     createUser,
     updateuser,
     deleteUser,

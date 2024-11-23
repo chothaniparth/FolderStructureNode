@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
-const { SECRET_KEY } = require("../common/variable");
+const dotenv = require('dotenv');
+dotenv.config();
+const {SECRET_KEY} = process.env;
 
 const verifyToken = (req, res, next) => {
     let token = req.headers['authorization'];
