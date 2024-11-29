@@ -1,6 +1,7 @@
 const { pool } = require('../../config/db');
 const bcrypt = require('bcrypt');
-const {checRequiredKeyValues, errorMessage, successMessage, generateJWTT, getCommonAPIResponse} = require('../../config/common');
+const {checRequiredKeyValues, errorMessage, successMessage, generateJWTT, getCommonAPIResponse, generateCGUID} = require('../../config/common');
+const {createAllTables, createDatabase} = require('../../models/index')
 
 const getUserById = async (req, res) => {
     try{
@@ -33,19 +34,23 @@ const UserLogin = async (req, res) => {
             return res.status(400).json(errorMessage(`${missingKeys.join(', ')} is required`))
         }
         const fetchUserInfoQuery = `
-        SELECT * FROM Users WHERE Email = '${Email}'
+        SELECT * FROM docker.dbo.Users WHERE Email = '${Email}'
         `
         const result = await pool.request().query(fetchUserInfoQuery);
-
+        
+        if(result.recordset.length === 0){
+            return res.status(400).json({...errorMessage('Invelod Email or Password.'), isLoginedIn : false});
+        }
         const verifyUser = bcrypt.compareSync(Password, result?.recordset?.[0]?.Password)
 
         if(result.recordset.length >= 0 && verifyUser === true){
             return res.status(200).json({
                 ...successMessage('User Email and Password is velid'), 
                     isLoginedIn : true, 
-                    token : generateJWTT({UserId : result?.recordset?.[0]?.UserId, 
                     Email,
                     UserId : result?.recordset?.[0]?.UserId,
+                    CGUID : result?.recordset?.[0]?.CGUID,
+                    token : generateJWTT({UserId : result?.recordset?.[0]?.UserId,
                 }),
             });
         }
@@ -66,21 +71,22 @@ const createUser = async (req, res)=>{
         }
         const salt = bcrypt.genSaltSync(5);
         const hash = bcrypt.hashSync(Password, salt);
-
+        const CGUID = await generateCGUID(Fname);
         const result = await pool.query(`
             INSERT INTO Users (
-                Fname, Lname, DOB, Email, Password
+                Fname, Lname, DOB, Email, Password, CGUID
             )
             OUTPUT INSERTED.UserId
             VALUES (
-                '${Fname}', '${Lname}', '${DOB}', '${Email}', '${hash}'
+                '${Fname}', '${Lname}', '${DOB}', '${Email}', '${hash}', '${CGUID}'
             );
         `)
-        console.log(result);
         if(result.rowsAffected[0] === 0){
             return res.status(400).send(errorMessage('No user created.'));
         }
-        return res.status(200).send({...successMessage('Data inserted successfully.'), token : generateJWTT({UserId : result?.recordset?.[0]?.UserId, Email})});
+        createDatabase(CGUID);
+        createAllTables(CGUID);
+        return res.status(200).send({...successMessage('Data inserted successfully.'), token : generateJWTT({UserId : result?.recordset?.[0]?.UserId, Email, CGUID}), CGUID});
     }catch(error){
         console.log('Add User Error :', error);
         return res.status(500).send(errorMessage(error.message));

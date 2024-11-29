@@ -74,6 +74,17 @@ const getCommonAPIResponseWithPagination = async (req, res, query) => {
     }
 }
 
+const generateCGUID = async (Fname) => {
+    if (!Fname || Fname.length < 3) {
+        throw new Error('Fname must be at least 3 characters long');
+    }
+    const d = new Date();
+    const timeValue = d.getTime().toString(); // Get timestamp as a string
+    const lastThreeDigits = timeValue.slice(-3); // Extract the last three digits of the timestamp
+    const firstThreeChars = Fname.slice(0, 3).toUpperCase(); // Extract the first three characters of Fname
+    return `${firstThreeChars}${lastThreeDigits}`; // Combine the values
+};
+
 module.exports = {
     checRequiredKeyValues,
     errorMessage,
@@ -81,4 +92,5 @@ module.exports = {
     generateJWTT,
     getCommonAPIResponse,
     getCommonAPIResponseWithPagination,
+    generateCGUID,
 }

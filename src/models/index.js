@@ -11,9 +11,20 @@ const executeQuery = async (query) => {
     }
 };
 
-const createAllTables = async () => {
+const createDatabase = async (CGUID)=>{
+    try{
+        await pool.request().query(`CREATE DATABASE ${CGUID}`)
+        console.log('new database created of name : ', CGUID);
+        return {Success : true}
+    }catch(error){
+        console.log('CREATE DATABASE Error :', error);
+        return {Success : false}
+    }
+}
+
+const createAllTables = async (CGUID) => {
     try {
-        await executeQuery(createUsersTableQuery);
+        await executeQuery(createUsersTableQuery(CGUID));
         console.log('All tables created successfully.');
     } catch (error) {
         console.error('Error during table creation process:', error.message);
@@ -22,4 +33,5 @@ const createAllTables = async () => {
 
 module.exports = {
     createAllTables,
+    createDatabase,
 }
