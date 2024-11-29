@@ -19,7 +19,7 @@ app.use(cors());
 
 app.use('/', Routers)
 
-setTimeout(createAllTables, 1000)
+// setTimeout(createAllTables, 1000)
 
 app.listen(process.env.PORT || 1002, ()=>{
     console.log(`server is runinng on http://localhost:${process.env.PORT || 1002}`);

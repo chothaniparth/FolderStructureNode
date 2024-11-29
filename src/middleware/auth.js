@@ -1,12 +1,13 @@
 const jwt = require("jsonwebtoken");
 const dotenv = require('dotenv');
+const { errorMessage } = require("../config/common");
 dotenv.config();
 const {SECRET_KEY} = process.env;
 
 const verifyToken = (req, res, next) => {
     let token = req.headers['authorization'];
     if (!token) {
-        return res.status(401).send("A token is required for authentication");
+        return res.status(401).send(errorMessage("A token is required for authentication"));
     }
     try {
         token = token.replace("Bearer ", "");

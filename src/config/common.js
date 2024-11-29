@@ -31,7 +31,7 @@ const successMessage = (message = "successfully!") => {
 }
 
 const generateJWTT = (Payload)=>{
-    return jwt.sign(Payload , process.env.SECRET_KEY);
+    return jwt.sign(Payload , process.env.SECRET_KEY, {expiresIn : '7d'});
 }
 
 const getCommonAPIResponse = async (req, res, query) => {
